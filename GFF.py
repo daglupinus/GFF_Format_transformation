@@ -4,7 +4,7 @@ INVALID_LEN_CHR = 4
 
 def normalize_chr(text):
     """
-    Wyjściowe dane muszą być zawsze spójne.
+    The output data must always be consistent.
         1 -> chr01
         2 -> chr02
         3 -> chr03
@@ -17,24 +17,25 @@ def normalize_chr(text):
     else:
         return text
 
-
+    
 def parse_csv_document(content, field_sep, line_sep):
-    """Przekształcanie postaci tekstowej na postać wygodną (w naszym przypadku to obiekty klasy CSVDocument)
+    """ Converting text form to a comfortable form( in this case the objects of class CSVDocument)
+    
+    Arguments:
+        content: content coming from a file that contains data
+        filed_sep: The separator at the field level
+        line_sep: The separator at the lines level
 
-    Argumenty:
-        content: treść pochodząca z pliku, która zawiera dane
-        filed_sep: Separator na poziomie pól
-        line_sep: Separator na poziomie linie
     """
     lines = content.split(line_sep)
-
-    # Budujemy rzedy
+    
+    # We build rows
     rows = []
     for line in lines:
-        if line.strip():  # linia musi być niepusta
+        if line.strip():  # line must be non-null
             row = line.split(field_sep)
-            rows.append(row)  # UWAGA: tutaj dalem tabulacje
-    # rows to lista list zawierająca teksty
+            rows.append(row)  # NOTE : here I gave tabs
+    # rows is a list of lists containing texts
     if len(rows) == 0:
         return CSVDocument([], [])
     elif len(rows) == 1:
@@ -42,14 +43,14 @@ def parse_csv_document(content, field_sep, line_sep):
     else:
         return CSVDocument(rows[0], rows[1:])
 
-
+    
 class CSVDocument:
 
     def __init__(self, headers, rows):
         """
-        Atrybuty:
-            headers: to lista (str) nagłówków
-            rows: to jest lista list (każda wewnątrz lista to jeden wiersz)
+        Atributes:
+            headers: is a list (str) of headers
+            rows: This is a list of lists (each list within a single line)
         """
         self.headers = headers
         self.rows = rows
@@ -58,15 +59,18 @@ class CSVDocument:
         return self.headers.index(header)
 
     def add_column(self, index, header, calculate):
-        """Dodaje kolumnę.
+        """adding a column.
 
-        Argumenty:
-            index: Wskazuje nam miejsce, gdzie ma zostać osadzona kolumna.
-            header: Nagłówek dla nowej kolumny.
-            calculate: Funkcja, która jako argument przyjmuje wiersz i na tej podstawie produkuje wynik dla nowej kolumny.
+        Arguments:
+            index: shows us the place where the column should be embeded.
+
+            header: Header for a new column.
+            calculate: A function that takes a row as an argument and on this basis produces a result for the new column.
+
         """
         self.headers.insert(index, header)
-        # Na podstawie każdego rzędu tworzymy jedną wartość, która stanowi podstawę do zbudowania kolumny.
+        # Based on each row we form one value, which is the basis to build the column.
+
         for row in self.rows:
             value = calculate(row)
             row.insert(index, value)
@@ -77,7 +81,7 @@ class CSVDocument:
             try:
                 indexes.append(self.headers.index(name))
             except ValueError:
-                raise ValueError('Nie można odnaleźć nazwy: ' + name)
+                raise ValueError(' Name Not Found: ' + name)
         return indexes
 
     def get_data(self, column_names):
@@ -86,36 +90,35 @@ class CSVDocument:
         return subdoc.rows
 
     def make_subdocument_by_indexes(self, indexes):
-        """Tworzymy NOWY dokument z wybranymi kolumnami.
+        """ We create a new document with the selected columns.
 
         Argumenty:
-            indexes: Indeksy kolumn, które mają zostać dołączone do nowego dokumentu.
+            indexes: Column indices which are to be included in the new document.
         """
-        # selekcja nagłówków na podstawie indeksów
+        # header selection by indexes
         headers = []
         for i in indexes:
             header = self.headers[i]
             headers.append(header)
 
-        # selekcja wartości na podstawie indeksów
-        # czyli każdy wiersz będzie przetworzony
-        # i z każdego wiersza wybieramy to co nas interesuje (patrz na indeksy).
+        # value selection by indexes
+        # that is, each line will be processed
+        # and from each row we choose what interests us (see indexes).
+
         rows = []
-        for row in self.rows:  # obsługa wielu linii
+        for row in self.rows:  # support for multiple lines
             new_row = []
-            for i in indexes:  # obsługa pojedynczej lini
+            for i in indexes:  # support for single line
                 new_row.append(row[i])
             rows.append(new_row)
 
         return CSVDocument(headers, rows)
 
     def render(self, field_sep=',', line_sep='\n'):
-        """Powoduje utworzenie tekstu opisującego dokument.
-        Udostępnia możliwość przestawienia separatorów na dowolne znaki.
+        """ Creates text describing the document. It provides the ability to switch separators for any characters.
         """
         lines = [
-            field_sep.join(self.headers)  # powstaje nam linia z nagłówkami
-        ]
+            field_sep.join(self.headers)  # We created a line of heading        ]
         for row in self.rows:
             lines.append(field_sep.join(row))
         return line_sep.join(lines)
@@ -134,24 +137,27 @@ def calculate_plus_100(row):
 BASE_COL_COUNT = 3
 
 # build_filename('fooboo.txt', 'x-factor')
-# build_filename('fooboo.csv', 'x-factor', 'gff')  # gdy chcemy inne rozszerzenie niz csv (bazowe z pliku)
+# build_filename('fooboo.csv', 'x-factor', 'gff')  # if we want other extension than .csv ( base file )
+
 
 def build_filename(file_name, col_name, ext=None):
-    """Funcja pomocnicza, służy do utworzenia nazwy pliku"""
+    """ auxiliary function used to create the file name"""
     basename, extension = file_name.split('.')
+    
+    # Method format is based on the template for example .'{0}-{1}'
+    # and during the calling out we give the values that snap into the prepared place.
+    # Where there is a 0 there leaps the first argument, where 1 leaps the second argument, etc.
 
-    # Metoda format działa w oparciu o szablon np. '{0}-{1}'
-    # i w trakcie wywołania podejemy wartości jakie wskakuje w przygotowane miejsca.
-    # Tam gdzie jest 0 tam skoczy pierwszy argument, tam gdzie jest 1 skoczy drugi argument itp.
+    
+    
+    # Sometimes it is necessary to have other extension than had the file base. Therefore, there is a possibility to 
+    # provide an optional parameter ext. If it is different than None then it will be included (eg. If we give gff). 
 
-
-    # Czasem potrzebne jest rozszerzenie inne posiadał plik bazowy. Dlatego istnieje możliwość
-    # podania opcjonalnego parametru ext. Jeśli jest inny niż None wtedy zostanie uwzględniony (np. gdy podamy gff).
     if ext:
         selected_ext = ext
     else:
         ext = extension # pewnie .txt
-
+    
     return '{0}_{1}.{2}'.format(basename, col_name, selected_ext)
 
 
@@ -160,98 +166,113 @@ def save_document(file_name, csv_doc):
         doc.write(csv_doc.render(' '))
 
 
-# KROK: 4
+# STEP: 4
 def build_sub_files(file_name, doc, name_doc):
+    """On the basis of the first file it is known how many subfiles will be created. If the first file has 5 columns then 2 files will be created because 3 columns are base.
+
     """
-    Na podstaiwe pierwszego pliku wiadomo ile powstanie tzn podplików.
-    Jeśli pierwszy plik ma 5 kolumn to powstaje 2 pliki ponieważ 3 kolumny są bazowe.
-    """
-    # obliczamy ilosć kolumn, a zarazem plików jakie chcemy przetworzyć
+    # We calculate the amount of columns, and at the same time the number of files we want to process.
+
     file_count = len(doc.headers) - BASE_COL_COUNT  # 2
+    
+    # We use the function range to artificially force the number of repetitions
 
-    # Wykorzystujemy funkcję range do tego, żeby sztucznie wymusić ilość powtórzeń
-    # w pętli. Natomiast ilość powtórzeń w tym przypadku jest zależna od tego ile jest extra kolumn.
+    # in the loop. However, the number of repetitions in this case is dependent on how many extra columns there are.
+
     for index in range(file_count):  # [0, 1, ....]
-        # extra_index to indeks kolumny jaką chcemy przepisać do pliku
-        # Jeśli mamy 3 bazowe kolumny to ostatni bazowy element ma indeks 2.
-        # Zatem, żeby odnieść się do kolejenych ekstra kolumn potrzebujemy większych indeksów
-        # W tym przypadku już widzimy obliczenie wartości 3, a następnie wartości 4.
-        extra_index = BASE_COL_COUNT + index  # (3 + 0, 3 + 1)
+        # extra_index is the index of the column we want to rewrite to the file
 
+        # If we have 3 base columns then the last base element has an index of 2.
+
+        # Therefore, to refer to the following extra columns we need major indexes
+
+        # In this case, we can already see the calculation of the value of 3, then the value of 4.
+
+        extra_index = BASE_COL_COUNT + index  # (3 + 0, 3 + 1)
+        
         sub_doc = doc.make_subdocument_by_indexes(
             [0, 1, 2, extra_index])  # [0, 1, 2, 3], [0, 1, 2, 4]
+        
+        # As we know the name of the final file is dependent on the extra column, therefore we take the header of this column.
 
-        # Jak wiadomo nazwa końcowego pliku jest zależna od ekstra kolumny zatem pobieramy jej nagłówek.
         col_name = doc.headers[extra_index]
-        # Teraz tylko budujemy nazwę pliku.
+        # Now we only build the file name.
+
         new_file_name = build_filename(file_name, col_name, 'gff')
-        # Teraz budujemy obiekt
+        # Now we build the object
         gff_doc = build_gff(sub_doc, name_doc, sub_doc.headers)
-        # Po to, żeby teraz go zapisać.
+        # and now we save it
         gff_doc.save(new_file_name)
 
+        
+# PRINCIPLE : strings in python are non-modifiable
+# therefore we can not simultaneously make several transformations on the same value 
 
-# ZASADA: stringi w pythonie są niemodyfikowalne
-# zatem nie można jednocześnie na tej samej wartości wykonać kilku przekształceń
 
 def normalize_csv_content(content):
-    """Pomocnicza funkcja do normalizacji danych w pliku CSV.
-
-    Jednolita struktura danych tak ułatwia dzielenie dokumentu na kawałki.
+    """ The auxiliary function to normalize the data in a CSV file.
+ 
+    
+A uniform data structure so facilitates the division of the document into pieces.
     """
     return content.replace('\t', ' ').replace('"', '')
 
 
-# KROK: 3
+# STEP: 3
 def process_file(data_file_name, name_file_name=None):
-    """Efektem tej funkcji jest stworzenie tzn. pod-plików na bazie wczytanych dokumentów CSV.
+    """ The result of this function is creation of the so called subfiles based on the loaded CSV documents.
 
-    Odczytujemy plik, parsujemy go i na jego podstawie budujemy obiekt opisujący dokument CSV.
-    Czyli teraz mamy swobodny dostęp zarówno do wartości z dokumentu jaki nagłówków.
+    
+    We read the file, parse it and on its basis we build an object describing the CSV document.
 
-    W zależności od drugiego argumentu tej funkcji rozpatrywane jest wczytanie kolejnego dokumentu.
+    So we now have the free access to both the values of the document as to the headers.
+   
+    Depending on the second argument of this function, loading of another document is considered.
+    
+    In the implementation we use the normalization of content read from the file in order to give a uniform data structure, so that to be able more easily divide it into pieces.
 
-    W implementacji stosujemy normalizację treści odczytanej z pliku w celu nadania jednolitej struktury danych tak,
-    żeby łatwiej móc je dzielić na kawałki.
+    
+    subfile : Output Document of the whole script including the merged data tougether with their conversion.
+    
+    Arguments:
+        data_file_name: Name of the file with the base/relevant data
 
-    podplik: Dokument wyjściowy całego skryptu obejmujący scalone dane wraz z przekształceniem.
+        name_file_name: The file with the attributes (it is possible to transfer the value None)
 
-    Argumenty:
-        data_file_name: Nazwa pliki z bazowymi/właściwymi danymi
-        name_file_name: Plik z atrybutami (możliwe jest przekazanie wartości None)
     """
-    # Budowanie pierwszego obiektu CSV
+    # Building of the first CSV object
     with open(data_file_name) as document:
         content = normalize_csv_content(document.read())
     data_csv_doc = parse_csv_document(content, ' ', '\n')
-
-    # Opcjonalne budowanie drugiego obiektu CSV
+    
+    # Optional building of the second CSV object
     if name_file_name:
         with open(name_file_name) as document:
             content = normalize_csv_content(document.read())
         name_csv_doc = parse_csv_document(content, ' ', '\n')
     else:
         name_csv_doc = None
-
-    # Przekazanie obiektów w celu wygenerowania podplików
+    
+    # Transmission of objects in order to generate subfiles
     build_sub_files(data_file_name, data_csv_doc, name_csv_doc)
-
+        
 
 SCORE_INDEX = 3
 
 
-# self to odpowiednik this z C++/Java
-# self uzywa sie w zastepstwie za miliony nazw egzemplarzy jakie stworzymy
+# self equivalent to this z C++/Java
+# self is used as a proxy for the names of millions of copies we will create
 
 
-# KROK #6
+
+# STEP #6
 class DocumentGFF:
     version = '3.2.1'
 
     def __init__(self, headers, data, attributes):
         self.headers = headers
         self.rows = data
-        self.attributes = attributes  # lista słowników (skocz: build_gff_document)
+        self.attributes = attributes  # list of dictionaries (jump: build_gff_document)
 
     def render(self):
         print(self._make_version_line())
@@ -264,38 +285,44 @@ class DocumentGFF:
             self._save_with_attributes(filename)
         else:
             self._save_without_attributes(filename)
-        # KONIEC CAŁEGO SKRYPTU
-
+        # END OF THE ENTIRE SCRIPT
+        
     def _save_without_attributes(self, filename):
         with open(filename, 'w') as doc:
             doc.write(self._make_version_line() + '\n')
             #print(self.attributes)
             for row in self.rows:
-
-                # UWAGA UWAGA!!!
+                
+                # WARNING WARNING!!!
                 if row[SCORE_INDEX] == 0:
-                    pass  # jesli linia ma byc pomijana to zamiast pass wstawmy continue
+                    pass  # if the line is to be skipped instead pass insert continue
 
-                # Na podstawie rzedu, który jest listą i artrybutów, który nie ma budujemy linię (czyli tekst)
+                
+                # Na podstawie rzedu, który jest listą i artrybutów, który nie ma budujemy linię (czyli tekst) 
+On the basis of the row which is a list and atributes and which is not we are building a line (or text)
+
                 line = self._make_line(row, {})
                 doc.write(line + '\n')
-
+        
     def _save_with_attributes(self, filename):
         with open(filename, 'w') as doc:
             doc.write(self._make_version_line() + '\n')
             #print(self.attributes)
+            
+            # When writing the attributes, the loop is more complex , because
 
-            # Przy zapisie atrybutów pętla jest bardziej rozbudowana, ponieważ
-            # chcemy scalać dane bazowe z atrybutami.
-            # Czyli w trakcie iteracji mamy jednocześnie dostęp do rzędy oraz atrybutów, które opisują ten rząd.
+            # we want to merge the base data with attributes.
+
+            # So during the iteration we have ssimultaneousely access to the rows and attributes that describe this rows.
+
             for row, row_attributes in zip(self.rows, self.attributes):
-                # UWAGA UWAGA!!!
+                # WARNING WARNING !!!
                 if row[SCORE_INDEX] == 0:
-                    pass  # jesli linia ma byc pomijana to zamiast pass wstawmy continue
-
+                    pass  # if the line is to be skipped instead pass insert continue
+                
                 line = self._make_line(row, row_attributes)
                 doc.write(line + '\n')
-
+                
     def _make_line(self, row, attributes):
         return '{seqid}\t{source}\t{type}\t{start}\t{end}\t{score}\t{strand}\t{phase}\t{attributes}'.format(
             seqid=normalize_chr(row[0]),
@@ -314,32 +341,34 @@ class DocumentGFF:
 
     def _merge_attributes(self, attributes):
         if attributes:
-            # funkcja quote - zmienia znaki na drukowalne np. spacje w %20
+            # function quote - changes signs on the printable eg. spaces
+ into %20
             return quote('Name={Name}'.format(Name=attributes['Name']))
         else:
             return '.'
 
-
-# KROK #5
+    
+# STEP #5
 def build_gff(csv, name_csv, column_names):
-    """Buduje obiekt typu DocumentGFF
-
-
+    """Builds an object of the type DocumentGFF
+    
+    
     data = [
         [1, 1, 1], + ...
         [2, 2, 2], + ...
         [3, 3, 3], + ...
     ]
-
+    
     attributes = [
         {Name: 'a'},
         {Name: 'b'},
         {Name: 'c'},
     ]
-
+    
     Argumenty:
-        csv: Obiekt DocumentCSV, posiada główne dane.
-        name_csv: Obiekt DocumentCSV, moze byc tez wartoscia None, opisuje atrybuty.
+        csv: Object DocumentCSV, contains the main data.
+        name_csv: object DocumentCSV, can also be the value of None, describes the attributes 
+
         column_names: ???
     """
     data = csv.get_data(column_names)
@@ -353,20 +382,21 @@ def build_gff(csv, name_csv, column_names):
     return DocumentGFF(column_names, data, attributes)
 
 
-# KROK #2
-# Dane (czyli nazwy plików w krotkach) zostały kolejno
-# przekazane do funkcji przetwarzającej pliki.
+# STEP #2
+# The data (ie, file names in tuples) were sequentially
+# passed to the function processing files
+
 def main(tasks):
-    """Wiele plików przetwarzamy."""
+    """Many files are processed."""
     for data_file_name, name_file_name in tasks:
         process_file(data_file_name, name_file_name)
 
-    # Alternatywa:
-    # for wiersz in tasks:
-        # proces_file(wiersz[0], wiersz[1])
-
-# KROK #1
-# Punkt startowy tutaj określamy chcemy przetworzyć.
+    # Alternative:
+    # for line in tasks:
+        # proces_file(line[0], line[1])
+            
+# STEP #1
+# Punkt startowy tutaj określamy chcemy przetworzyć. Starting point, here we define what we want to process
 main([
     ('BZcoverage_Oryza_SR_Dagmara_GRnormreads.txt', None),
     ('BZcoverage_Oryza_SR_Dagmara_GRnormreads.txt', 'Arabido1_TE_Quesneville.txt'),
@@ -383,7 +413,7 @@ main([
 ])
 
 
-# # NOTKA O PARSOWANIU:
+# # NOTE About parsing:
 # # text = """
 # # sun = słońce
 # # milk = mleko
@@ -394,7 +424,7 @@ main([
 # #     result_dict = {}
 # #     lines = text.split('\n')
 # #     for line in lines:
-# #         if '=' in line:
+# #         if '=' in line: 
 # #             left, right = line.split('=')
 # #             result_dict[left.strip()] = right.strip()
 # #     return result_dict
@@ -407,21 +437,23 @@ main([
 
 
 # # class Car:
-
+    
 # #     def __init__(self, color):
 # #         car.color = color
-
+        
 # #     def render(self):
 # #         return 'Samochod koloru: {0}'.format(car.color)
 
 
 
 
-# Magiczne słowa:
-# continue -> przejście do kolejnej iteracji (działa tylko w pętli)
-# break -> przerwanie pętli (działa tylko w pętli)
-# Generalnie:
-# Jeśli pętla używa tych słów należy to traktować na równi z sytuacją, że gdzieś na świecie ginie jednorożec.
+# Magic words:
+# continue -> the transition to the next iteration (only works in a loop)
+
+# break -> interruption of loop (only works in a loop)
+# Generally: 
+# if the loop uses these words it should to be equated with the situation, that somewhere in the world dies an unicorn.
+
 
 # numbers = [1, 2, 3, 4, 5, 6, 7]
 # for number in numbers:
